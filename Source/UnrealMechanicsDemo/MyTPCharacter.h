@@ -22,16 +22,36 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
-	// Kamera
+	
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	USpringArmComponent* SpringArm;
 
 	UPROPERTY(VisibleAnywhere, Category = "Camera")
 	UCameraComponent* FollowCamera;
 
-	// Input fonksiyonlarý (klasik input)
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* CharacterMesh;
+
+
+	// klasik input
 	void MoveForward(float Value);
+
 	void MoveRight(float Value);
+
 	void Turn(float Value);
 	void LookUp(float Value);
+
+	void StartSprint();
+	void StopSprint();
+
+	void StartCrouch();
+	void StopCrouch();
+
+	
+
+	
+
+
+
 };

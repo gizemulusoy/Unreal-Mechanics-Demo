@@ -6,14 +6,24 @@
 #include "Components/InputComponent.h"
 #include "Math/RotationMatrix.h"
 
+#include "GameFramework/Character.h"
+
+#include "UObject/ConstructorHelpers.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Animation/AnimInstance.h"
+
+#include "Engine/Engine.h"
+
+
+
 AMyTPCharacter::AMyTPCharacter()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	// Player bu pawn'u kontrol etsin (spawn olmasa bile "görünmüyor" hissini çözer)
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
-	// Third person karakter ayarlarý
+	// Third person settings
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
@@ -28,7 +38,7 @@ AMyTPCharacter::AMyTPCharacter()
 	SpringArm->TargetArmLength = 300.f;
 	SpringArm->bUsePawnControlRotation = true;
 
-	// Kamera
+	// Camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(SpringArm, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
@@ -43,6 +53,34 @@ AMyTPCharacter::AMyTPCharacter()
 	// (Varsa) controller pitch/roll kapalý kalsýn
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
+
+
+
+	// Skeletal Mesh ayarý
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> MeshAsset(
+		TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple")
+	);
+
+	if (MeshAsset.Succeeded())
+	{
+		GetMesh()->SetSkeletalMesh(MeshAsset.Object);
+		GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -90.f));
+		GetMesh()->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+	}
+
+	// AnimBP çalýþmasý için þart
+	GetMesh()->SetAnimationMode(EAnimationMode::Type::AnimationBlueprint);
+
+	static ConstructorHelpers::FClassFinder<UAnimInstance> AnimBP(
+		TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C")
+	);
+
+	if (AnimBP.Succeeded())
+	{
+		GetMesh()->SetAnimInstanceClass(AnimBP.Class);
+	}
+
+
 }
 
 void AMyTPCharacter::BeginPlay()
@@ -56,13 +94,25 @@ void AMyTPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 	// Axis
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMyTPCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("MoveRight", this, &AMyTPCharacter::MoveRight);
+	//PlayerInputComponent->BindAxis("MoveRight", this, &AMyTPCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("Turn", this, &AMyTPCharacter::Turn);
 	PlayerInputComponent->BindAxis("LookUp", this, &AMyTPCharacter::LookUp);
 
 	// Action
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+
+	// Sprint
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &AMyTPCharacter::StartSprint);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &AMyTPCharacter::StopSprint);
+
+	// Crouch
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AMyTPCharacter::StartCrouch);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &AMyTPCharacter::StopCrouch);
+
+	
+	PlayerInputComponent->BindAxis("MoveRight", this, &AMyTPCharacter::MoveRight);
+
 }
 
 void AMyTPCharacter::MoveForward(float Value)
@@ -74,7 +124,7 @@ void AMyTPCharacter::MoveForward(float Value)
 	AddMovementInput(ForwardDir, Value);
 }
 
-void AMyTPCharacter::MoveRight(float Value)
+ void AMyTPCharacter::MoveRight(float Value)
 {
 	if (!Controller || Value == 0.f) return;
 
@@ -82,6 +132,11 @@ void AMyTPCharacter::MoveRight(float Value)
 	const FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
 	AddMovementInput(RightDir, Value);
 }
+
+
+
+
+
 
 void AMyTPCharacter::Turn(float Value)
 {
@@ -92,5 +147,45 @@ void AMyTPCharacter::LookUp(float Value)
 {
 	AddControllerPitchInput(Value);
 }
+
+// Sprint : 
+
+void AMyTPCharacter::StartSprint()
+{
+	GetCharacterMovement()->MaxWalkSpeed = 900.f;
+
+
+	// Debug check: sprint functionality
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(1, 9999.f, FColor::Green, TEXT("SPRINT ON (Speed=900)"));
+}
+
+void AMyTPCharacter::StopSprint()
+{
+	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+
+	if (GEngine)
+		GEngine->RemoveOnScreenDebugMessage(1);
+}
+
+// Crouch : 
+
+void AMyTPCharacter::StartCrouch()
+{
+	Crouch();
+
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(2, 9999.f, FColor::Green, TEXT("Crouch : ON "));
+}
+
+void AMyTPCharacter::StopCrouch()
+{
+	UnCrouch();
+
+	if (GEngine)
+		GEngine->RemoveOnScreenDebugMessage(2);
+}
+
+
 
 
