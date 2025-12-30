@@ -29,8 +29,15 @@ AMyTPCharacter::AMyTPCharacter()
 	bUseControllerRotationRoll = false;
 
 	GetCharacterMovement()->bOrientRotationToMovement = true;
+
+	
+
+
+	
+
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 540.f, 0.f);
 	GetCharacterMovement()->MaxWalkSpeed = 600.f;
+
 
 	// SpringArm
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
@@ -45,10 +52,10 @@ AMyTPCharacter::AMyTPCharacter()
 
 
 	// Kamera için: controller yaw -> karakteri döndürsün
-	bUseControllerRotationYaw = true;
+	//bUseControllerRotationYaw = true;
 
 	// CharacterMovement: artýk hareket yönüne göre dönmesin (controller'a göre dönsün)
-	GetCharacterMovement()->bOrientRotationToMovement = false;
+	//GetCharacterMovement()->bOrientRotationToMovement = false;
 
 	// (Varsa) controller pitch/roll kapalý kalsýn
 	bUseControllerRotationPitch = false;
@@ -113,6 +120,16 @@ void AMyTPCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMyTPCharacter::MoveRight);
 
+
+	//  Backpedal
+	PlayerInputComponent->BindAction("Backpedal", IE_Pressed, this, &AMyTPCharacter::BackpedalPressed);
+	PlayerInputComponent->BindAction("Backpedal", IE_Released, this, &AMyTPCharacter::BackpedalReleased);
+
+
+
+	
+
+
 }
 
 void AMyTPCharacter::MoveForward(float Value)
@@ -128,15 +145,11 @@ void AMyTPCharacter::MoveForward(float Value)
 {
 	if (!Controller || Value == 0.f) return;
 
+
 	const FRotator YawRot(0.f, Controller->GetControlRotation().Yaw, 0.f);
 	const FVector RightDir = FRotationMatrix(YawRot).GetUnitAxis(EAxis::Y);
 	AddMovementInput(RightDir, Value);
 }
-
-
-
-
-
 
 void AMyTPCharacter::Turn(float Value)
 {
@@ -185,6 +198,22 @@ void AMyTPCharacter::StopCrouch()
 	if (GEngine)
 		GEngine->RemoveOnScreenDebugMessage(2);
 }
+
+void AMyTPCharacter::BackpedalPressed()
+{
+	// S basýlýyken: STRAFE / BACKPEDAL modu
+	bUseControllerRotationYaw = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+}
+
+void AMyTPCharacter::BackpedalReleased()
+{
+	// S býrakýlýnca: NORMAL third-person
+	bUseControllerRotationYaw = false;
+	GetCharacterMovement()->bOrientRotationToMovement = true;
+}
+
+
 
 
 

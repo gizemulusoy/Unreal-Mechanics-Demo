@@ -18,6 +18,11 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+
+// input function 
+	void BackpedalPressed();
+	void BackpedalReleased();
+
 public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -47,6 +52,12 @@ private:
 
 	void StartCrouch();
 	void StopCrouch();
+
+
+
+
+	bool bBackpedal = false;
+
 
 	
 
